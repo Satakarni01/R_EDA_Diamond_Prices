@@ -1,0 +1,827 @@
+---
+output:
+    html_document:
+        title: "Exploration of Diamond Prices"
+        Author: "Satakarni Bommuluri"
+        toc: true
+        toc_float: true
+        theme: readable
+        number_sections: false
+        css: style.css
+---
+Exploration of Diamond Prices
+==============================
+### *Author: Satakarni Bommuluri* 
+# Abstract
+In this paper, I perform Exploratory Data Analysis (EDA) on *diamonds* dataset to understand the important features that impact the prices of diamonds in crucial manner.   
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+library(ggplot2)
+library(dplyr)
+library(reshape)
+library(reshape2)
+library(GGally)
+library('ggthemes')
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+data(diamonds)
+```
+# About the Dataset
+
+The *Diamonds* dataset used in this EDA is part of the *ggplot* library. The dataset consists of a list of about 54000 diamonds. Each record comprise the price of a diamond and features of a diamond such as 4Cs: carat, cut, clarity, color, and volume related information. Below are the list of columns.   
+
+```{r, echo=FALSE, warning=FALSE}
+str(diamonds)
+```
+
+Furthermore, the columns cut, color, and clarity are factors with below ordered levels:
+
+```{r, echo=FALSE}
+print("The ascending order of quality of diamond cut levels:")
+levels(diamonds$cut)
+print("The ascending order of quality of diamond color levels:")
+levels(diamonds$color)
+print("The ascending order of quality of diamond clarity levels:")
+levels(diamonds$clarity)
+```
+
+
+# Univariate Plots Section
+
+We begin our analysis by exploring the distribution, any factor levels, missing values and outliers of individual variables of the dataset.   
+
+Below is the summary stats of all variables in  dataset. 
+
+```{r echo=FALSE, Univariate_Plots}
+summary(diamonds)
+```
+
+### Variable:price Analysis 
+
+From the summary stats, the values of price variable ranges from 326 to 18823. We now check the variable has any number of missing values. 
+
+```{r, echo=FALSE, warning=FALSE}
+print("Total missing values:")
+table(is.na(diamonds$price))
+```
+ 
+There are no missing values for price variable. I will plot histograms to understand the distribution in price variable. 
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = diamonds, aes(x = price)) +
+  geom_histogram(binwidth = 300, color="black", fill = "light blue") +
+  scale_x_continuous(breaks = seq(300,19000,1200)) +
+  scale_y_continuous(breaks = seq(0,15000,1000)) + 
+    labs(x="Price ($)", title = "Price ($) Histogram") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(),
+          plot.title = element_text(hjust = 0.5))
+#x-scale is decided 
+```
+
+
+```{r}
+table(diamonds$price < 7500)/nrow(diamonds)
+```
+
+Since 84% of diamonds are below $7500.00 , we will zoom-in to the prices less than $7500, and try histograms at bin widths. 
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = subset(x = diamonds, price < 7500), aes(x = price)) +
+  geom_histogram(binwidth = 300, color = "red", fill = "light blue") +
+  scale_x_continuous(breaks = seq(300,19000,400)) +
+  scale_y_continuous(breaks = seq(0,8000,500)) + 
+    labs(x="Price ($)", title = "Price($) Histogram limited by $7500.00, bin = $300.00") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5)) 
+#adjusting binwidth 
+ 
+ggplot(data = subset(x = diamonds, price < 7500), aes(x = price)) +
+  geom_histogram(binwidth = 100, color = "red", fill = "light yellow") +
+  scale_x_continuous(breaks = seq(300,19000,400)) +
+  scale_y_continuous(breaks = seq(0,3000,500)) + 
+    labs(x="Price ($)", title = "Price($) Histogram limited by $7500.00, bin = $100.00") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+#
+```
+
+```{r, echo=FALSE, warning=FALSE}
+
+print("Price($) Histogram is right skewed with mean at around $800.00")
+```
+
+```{r, echo=FALSE, warning=FALSE}
+#print("Price($) Histogram is right skewed with mean at around $800.00")
+#
+ggplot(data = subset(x = diamonds, price < 1500), aes(x = price)) +
+  geom_histogram(binwidth = 50, color = "red", fill = "light green") +
+  scale_x_continuous(breaks = seq(300,2000,100)) +
+  scale_y_continuous(breaks = seq(0,2000,250)) + 
+    labs(x="Price ($)", title = "Price($) Histogram limited by $7500.00, bin = $50.00") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+The histogram of diamonds priced under $1500 takes a uni-modal distribution. 
+
+Finally I will plot the *price* histograms on a logarithmic scale. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = diamonds, aes(x = price)) +
+  geom_histogram() +
+  scale_x_log10(breaks = c(seq(300,3000,300), seq(3000, 5000, 500) ,seq(5000, 9000, 1000),seq(9000, 20000, 2000))) + 
+    labs(x="Price ($)in Log Scale", title = "Price($) Histogram on Log Scale") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle=90), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+The above plot indicate two pricing segments for diamonds:  
+
+    1. one market for below $1500 price point, and
+    2. another segment for above $1500 price point. 
+
+```{r}
+round(table(diamonds$price < 1500)/nrow(diamonds),2) *100
+```
+63% of market segment are for diamonds above $1500.00, as per our dataset. 
+
+### Variables:cut, clarity, and color  Analysis 
+
+```{r, warning=FALSE, echo=FALSE}
+ggplot(data = diamonds, aes(x = cut)) +
+    geom_histogram(stat = "count", fill = "light blue", color = "red") +
+    scale_y_continuous(breaks = seq(0,25000, 2500)) +
+    labs(x="Cut Grade", title = "Cut Histogram") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+###
+ggplot(data = diamonds, aes(x = clarity)) +
+    geom_histogram(stat = "count", fill = "light green", color = "red") +
+    scale_y_continuous(breaks = seq(0,15000, 2500)) +
+    labs(x="Clarity Grade", title = "Clarity Histogram") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+###
+ggplot(data = diamonds, aes(x = color)) +
+    geom_histogram(stat = "count", fill = "light yellow", color = "red") +
+    scale_y_continuous(breaks = seq(0,15000, 1000)) +
+    labs(x="Color Grades", title = "Color Histogram") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+###
+```
+
+The histogram of diamond count is linearly increasing by cut quality. While the diamond count distribution of clarity and color took the shape of (almost) normal distribution by increasing order of quality.   
+
+### Variable:carat (weight) Anlaysis
+
+Following is summary stats of carats: 
+
+```{r, echo=FALSE, warning=FALSE}
+summary(diamonds$carat)
+```
+
+Given the above stats, I have chosen below bin widths and x-axis break marks. 
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = diamonds, aes(x = carat)) +
+    geom_histogram(binwidth = 0.1, color = "dark green", fill = "light yellow") +
+    scale_x_log10(breaks = seq(0.2,3.2,.2)) +
+    labs(x="Carat (Ct)", title = "Carat Histogram with bin = 0.1 Ct") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 90), 
+          plot.title = element_text(hjust = 0.5))
+###
+ggplot(data = diamonds, aes(x = carat)) +
+    geom_histogram(binwidth = 0.01, color = "dark green", fill = "light yellow") +
+    scale_x_log10(breaks = seq(0.2,3.2,.2)) +
+    labs(x="Carat (Ct)", title = "Carat Histogram with bin = 0.01 Ct") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 90), 
+          plot.title = element_text(hjust = 0.5))
+###
+```
+
+```{r}
+table((diamonds$carat < 2.5))/nrow(diamonds)
+```
+
+The dataset contains diamonds of lower carat in large number. In specific, 99.7% diamonds weight less than 2.5 carats. 
+
+### Variable:depth, and table Analysis
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = diamonds, aes(x = depth)) +
+    geom_histogram(binwidth = 0.5, color = "red", fill = "light blue") +
+    xlim(55,70) +
+    labs(x="Depth (mm)", title = "Depth Histogram") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+##
+ggplot(data = diamonds, aes(x = table)) +
+    geom_histogram(binwidth = 1, color = "red", fill = "light blue") +
+    xlim(50,70) + 
+   # scale_x_continuous(breaks = seq(40,80,2))+
+    labs(x="Table (%)", title = "Table Histogram") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+The histogram of depth and table are nearly normal distributed for chosen bin width. 
+
+### Variable:volume Analysis
+
+We analyze the missing values for variables *x,y,* and *z*. 
+
+```{r, echo=FALSE, warning=FALSE}
+print("Missing values in x:")
+table(diamonds$x == 0)
+print("Missing values in y:")
+table(diamonds$y == 0)
+print("Missing values in z:")
+table(diamonds$z == 0)
+```
+
+
+We will create a new feature in *diamond* dataset by variable name *volume*. The new variable is derived by multiplying the x,y, and z dimensions provided in the dataset (assuming diamond as a cube shape). Here is the summary stats and histogram of the *volume* variable after omitting zero values.
+
+```{r, echo=FALSE, warning=FALSE}
+diamonds$volume <- ( diamonds$x * diamonds$y * diamonds$z )
+print("Summary stats of volume:")
+summary(diamonds[!(diamonds$volume == 0),]$volume)
+ggplot(data = subset(diamonds, (volume != 0)), aes(x = volume)) +
+    geom_histogram(binwidth = 10, color = "red", fill = "light blue") +
+    xlim(0,450) +
+    labs(x = "Volume (mm cubic)", title = "Volume Histogram") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+The histogram of diamond volumes is strongly left skewed. 
+
+
+# Univariate Analysis
+
+The univariate analysis provides information about the distribution of individual variable for a given dataset. 
+
+### Structure of dataset
+The *diamond* dataset has 10 variables with almost 54000 records. Additionally it has three variables *cut*, *color*, and *clarity* that are factors with ordered levels. 
+
+### Main feature(s) of interest in dataset
+In general the important features of a diamond are 4 Cs : *cut, clarity, color,* and *carat*. Specifically in our dataset, the features *cut, clarity,* and *color* are discrete and *carat* is continuous. It would be interesting to notice *price* variance with 4Cs. 
+
+### Other features of interest in the dataset
+
+Besides 4Cs, I would like to analyze the *price* variance with *depth, table,* and *volume*. 
+
+### Any new variables from existing variables in the dataset
+
+Yes, *volume* is created from *x,y,* and *z*. 
+
+### Commentary on unusual distributions, and data wraggling operations
+
+Yes, the comments about distribution are mentioned below each plot in 
+Section *univariant plot section*. The dataset is pretty tidy with 
+few missing values for *x,y,* and *z*. During the analysis, we will 
+ignore these missing values. During plot section, adjustments are made to 
+zoom into certain part of data for more details.
+
+# Bivariate Plots Section
+
+Since there are only 11 features in dataset, I will quickly check correlation between variables by plotting scatter matrix.   
+
+```{r echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+suppressMessages(ggpairs(data = diamonds) +
+    theme(axis.ticks = element_blank(), 
+          axis.text = element_blank(), 
+          plot.title = element_text(hjust = 0.5))) + 
+    labs(title="Matrix of plots of all Diamond features ")
+```
+
+### price vs. carat
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = diamonds, aes(x = carat, y = price)) + 
+    geom_point() + 
+    labs(x="Carat (Ct)", y="Price($)", title = "Carat (Ct.) vs. Price($)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+Below plot with *carat* less than 99 percentile, alpha = 1/10 and a smoothed condition line of linear model colored in red. 
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = subset(diamonds, carat < quantile(carat, 0.99)),aes(x = carat, y = price) ) +
+    geom_point(alpha = 1/10) +
+    geom_smooth(method = "lm", color = "red") + 
+    labs(x="Carat (Ct)", y = "Price ($)", title = " Linear Regression Price = f(Carat)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+I will create a data frame that stores the aggregated mean and median prices grouped by carat. 
+Summary stats and plot based on new data frame are as below:
+
+```{r, echo=FALSE, warning=FALSE}
+diamonds_by_carat <- diamonds  %>% group_by(carat) %>%
+    summarise(price_mean = mean(price), 
+              price_median = median(price), 
+              n = n()) %>%
+    arrange(carat)
+summary(diamonds_by_carat)
+ggplot(data = diamonds_by_carat, aes(x = carat, y = price_mean)) + 
+    geom_line() + 
+    labs(x="Carat (Ct)", y = "Mean Price($)", title = "Carat(ct.) vs. Mean price($) ") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+The below plot overlays the important stats, after omitting top 1% *carat* outliers :
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = subset(diamonds, carat < quantile(carat, 0.99)), 
+       aes(x = carat, y = price)) +
+    geom_point(color = "light blue") + 
+    geom_line(stat = "summary", fun.y = mean, color = "red") +
+    geom_line(stat = "summary", fun.y = median, color = "dark green") + 
+    geom_line(stat = "summary", fun.y = quantile, fun.args = list(prob = 0.9), linetype = 2) + 
+    geom_line(stat = "summary", fun.y = quantile, fun.args = list(prob = 0.1), linetype = 2) + 
+    scale_color_discrete(name = "Y series", labels = c("mean", "median", "0.9", "0.1")) +
+    labs(x="Carat (Ct)", y = "Mean Price($)", title = "Carat vs. Price. Carat Quantile, Mean(Red), Median(Green)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+### TODO: add legend to this graph
+```
+
+Finally, observing the correlation between *carat* vs. *price*. 
+
+```{r, echo=FALSE, warning=FALSE}
+cor(x = diamonds$carat, y = diamonds$price, method = "pearson")
+```
+
+Hence there is strong relation between carat (weight)of the diamond and its price. 
+
+### price vs. cut, clarity, color
+
+Unlike *carat*, the variables *cut, clarity,* and *color* are discrete variables. 
+Hence I will use *by()* function to get the aggregates at each level, and consequently plot the box plots. 
+
+```{r, echo=FALSE, warning=FALSE}
+by(data = diamonds$price, INDICES = diamonds$cut, FUN = summary)
+ggplot(data = diamonds, aes(x = cut, y = price)) + 
+    geom_boxplot() + 
+    scale_y_continuous(breaks = seq(0,20000,1000)) + 
+    labs(x="Color", y = "Price($)", title = "Boxplot of Cut") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r, echo=TRUE, warning=FALSE}
+ggplot(data = diamonds, aes(x = cut, y = price)) + 
+    geom_boxplot() + 
+    scale_y_continuous(breaks = seq(0,10000,1000)) +
+    coord_cartesian(ylim = c(0,10000)) + 
+    labs(x="Cut Grades", y = "Price($)", title = "Boxplot of Cut after removing outliers") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+The intuitive expectation would be increase in *price* with *cut* quality. However with our analysis the variance in *price* with *cut* is not giving a clear patter of ascending order. This might be due 
+to other features influencing *price* along with *cut*. For instance high quality cut diamonds might be having lower carat in our dataset. 
+Therefore, we will revisit *cut* variable in multivariant analysis to address these questions. 
+
+Repeating same analysis with clarity. 
+
+```{r, echo=FALSE, warning=FALSE}
+by(data = diamonds$price, INDICES = diamonds$clarity, FUN = summary)
+ggplot(data = diamonds, aes(x = clarity, y = price)) + 
+    geom_boxplot() + 
+    scale_y_continuous(breaks = seq(0,20000,1000)) + 
+    labs(x="Clarity Grade", y = "Price($)", title = "Boxplot of Clarity") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+Below plot after omitting outliers i.e., prices above $7000.00
+
+```{r, echo=TRUE, warning=FALSE}
+ggplot(data = diamonds, aes(x = clarity, y = price)) + 
+    geom_boxplot() + 
+    scale_y_continuous(breaks = seq(0,10000,1000)) +
+    coord_cartesian(ylim = c(0,7000)) + 
+    labs(x="Clarity Grade", y = "Price($) removed outliers", title = "Boxplot of Clarity without Outliers") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+I have similar conclusion for *clarity* vs. *price* as I had with *cut* vs. *price*. 
+
+Now proceeding analysis with color.  
+
+```{r, echo=FALSE, warning=FALSE}
+by(data = diamonds$price, INDICES = diamonds$color, FUN = summary)
+ggplot(data = diamonds, aes(x = color, y = price)) + 
+    geom_boxplot() + 
+    scale_y_continuous(breaks = seq(0,20000,1000)) + 
+    labs(x="Color", y = "Price($)", title = "Boxplot of Color") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+Below plot after omitting outliers i.e., prices above $8000.00
+
+```{r, echo=TRUE, warning=FALSE}
+ggplot(data = diamonds, aes(x = color, y = price)) + 
+    geom_boxplot() + 
+    scale_y_continuous(breaks = seq(0,10000,1000)) +
+    coord_cartesian(ylim = c(0,8000)) + 
+    labs(x="Color", y = "Price($) removed outliers", title = "Boxplot of Color without Outliers") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+Unlike with *cut* and *clarity*, the variable *color* is effecting the *price* of diamond by its quality. 
+
+### price vs. depth, table
+
+As *depth* and *table* are continuous variables, I will begin with correlation test and continue my analysis with scatter plots against *price*, respectively. 
+
+The relation between *depth* and *price* is as follow: 
+```{r, echo=FALSE, warning=FALSE}
+cor(x = diamonds$depth, y = diamonds$price, method = "pearson")
+```
+
+Hence it implies there is hardly any relation (positive or negative) between *depth* and *price* of diamond. 
+If we depict a scatter plot on these variables, we should expect variance in *price* for set of constant values of *depth*. 
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = diamonds, aes(x = depth, y = price)) + 
+    geom_point() + 
+    coord_cartesian(xlim = c(50, 75)) +
+    scale_x_continuous(breaks = seq(50,75,2.5)) + 
+    labs(x="Depth (mm)", y = "Price($)", title = "Depth vs. Price") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+The plot tells the same story as the correlation number calculated per Pearson method. 
+
+The relation between *table* and *price* is as follow: 
+```{r, echo=FALSE, warning=FALSE}
+cor(x = diamonds$table, y = diamonds$price, method = "pearson")
+```
+
+Here it implies there is an insignificant relation between *table* and *price* of diamond. 
+If we depict a scatter plot on these two variables, we should a very slight variance in *price* for set of constant values of *table*. 
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = diamonds, aes(x = table, y = price)) + 
+    geom_point() + 
+    coord_cartesian(xlim = c(45, 75)) +
+    scale_x_continuous(breaks = seq(45,75,2.5)) + 
+    labs(x="Table (%)", y = "Price($)", title = "Table vs Price") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+In conclusion, the variables *depth* and *table* hardly have any correlation with *price* variable. 
+We can drop these variables from further analysis. 
+
+### price vs. volume
+
+As *volume* is a continuous variable, I will determine its correlation with *price* followed by a scatter plot.  
+
+```{r, echo=FALSE, warning=FALSE}
+cor(diamonds$volume, diamonds$price, method = "pearson")
+```
+It implies a strong positive relation between these two variables. We will expect a linear relation between *volume* and *price*. 
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(data = diamonds, aes(x = volume, y = price)) + 
+    geom_point() + 
+    coord_cartesian(xlim = c(0,500), ylim = c(0,25000)) + 
+    geom_smooth(method = "lm", color = "red") + 
+    labs(x="Volume (mm cubic)", y = "Price($)", title = "Volume vs. Price") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+```
+
+As expected from correlation coefficient, there is a near linear relation between *volume* and *price*. 
+
+# Bivariate Analysis
+
+### Relationships observed in this part. The variance of features of interest. 
+Among the  4Cs, there is a strong linear relationship between *carat* and *price*. The bivariate relation of *price* vs. *cut* or *clarity* or *color* is not found strong.  
+
+### Observation of interesting relationships between the other features.
+The variables *table* and *depth* don't have strong correlation with *price*. The correlation of *volume* and *price* is linear. 
+
+### Strongest relationship found in this Section. 
+The variables *carat* and *volume* have strong relationship with *price*. 
+
+# Multivariate Plots Section
+
+The following multivariant plots are depicted. Each plot has a title referring with Figure number and description. 
+
+```{r echo=FALSE, Multivariate_Plots}
+ggplot(data = diamonds, aes(x = carat, y = price)) +
+  geom_point(aes(color = color)) +
+  facet_wrap(~ cut, ncol = 2) + 
+  labs(title = "Figure 1: Facets by Diamond Cut") +
+  scale_color_brewer(type = "div") +
+  geom_vline(xintercept = c(1,2,3)) + 
+  geom_hline(yintercept = c(5000,10000,15000), color = "blue") + 
+    labs(x="Carat (Ct.)", y = "Price($)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+###
+ggplot(data = diamonds, aes(x = carat, y = price)) +
+  geom_point(aes(color = color)) +
+  facet_wrap(~ clarity, ncol = 2)+ 
+  labs(title = "Figure 2: Facets by Diamond Clarity")+
+  scale_color_brewer(type = "div") +
+  geom_vline(xintercept = c(1,2,3)) + 
+    geom_hline(yintercept = c(5000,10000,15000), color = "blue") + 
+    labs(x="Carat (Ct.)", y = "Price($)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+###
+ggplot(data = diamonds, aes(x = color, y = carat)) +
+  geom_boxplot() + 
+  labs(title = "Figure 3: Diamond Color and Carat relation")+ 
+    labs(x="Color", y = "Carat(Ct.)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+
+###
+ggplot(data = diamonds, aes(x = carat/volume, y = price)) +
+  geom_point(aes(color = cut)) +
+  facet_wrap(~ color, ncol = 2) + 
+  labs(title = "Figure 4: Facets by Diamond Color")+
+  scale_color_brewer(type = "div") + 
+    labs(x="Carat per Vol. (Ct/mm cubic)", y = "Price($)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+
+###
+ggplot(data = diamonds, aes(x = carat/volume, y = price)) + 
+    geom_point() + 
+    labs(title = "Figure 5: Diamond Density plot") + 
+    labs(x="Carat per Vol. (Ct/mm cubic)", y = "Price($)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+
+###
+ggplot(data = diamonds, aes(x = carat, y = price)) +
+  geom_point(aes(color = cut)) +
+  facet_wrap(~ clarity, ncol = 2)  +
+  geom_smooth(method = "lm", color = "red") +
+  geom_vline(xintercept = c(1,2,3)) + 
+  labs(title = "Figure 6: Facets by Diamond Clarity")+
+  scale_color_brewer(type = "div") + 
+    geom_hline(yintercept = c(5000,10000,15000), color = "blue") + 
+    labs(x="Carat (Ct.)", y = "Price($)") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5))
+
+###
+```
+
+# Multivariate Analysis
+
+### Relationships observed in this part of the investigation. 
+
+In this section, I will also discuss the features that strengthened each other 
+in terms of looking at the above stated feature(s) of interest.
+
+1. Figure# 1 indicate *price* variance by *carat* for different qualities of 
+diamond *cut*. 
+It can be observed that there exists some evidence that price of the diamond 
+increases with the quality of cut. However this relationship is not strong.   
+
+2. Figure# 2 Figure# 1 indicate *price* variance by *carat* for different 
+qualities of diamond *clarity*. In bi-variate analysis, i established that there
+is strong relationship between *price* and *carat*. The variable *clarity* added
+another strong dimension on top of *carat* to influence the *price* of a diamond. 
+As it can observed, the prices of diamond reach increases (lm slope decreases) as
+the diamond's clarity increases for a given carat. 
+
+3. The scatter plots Figure# 1 and Figure# 2 are colored based on the *color* of
+the diamond. I observed that quality of diamond color increases with carat! So
+I plotted Figure #3 to test out this hypothesis. The medians of the box plots 
+indicate that quality of color and carat have a positive linear relationship. 
+
+4. Figure #4 and Figure #5 are the *price* vs. density (*carat*/*volume*) 
+scatter plots, while Figure #4 is faceted for different diamond *cut*. The 
+density of diamond hardly varies. After recalling of high school basics and
+[Google search] (https://socratic.org/questions/why-is-density-constant), 
+i realized the density of a substance (esp., solids) remains almost constant. 
+Hence the plots are telling correct facts. Also an obvious observation is that 
+high quality cut with lower density are priced higher than low quality cut with 
+high density. 
+
+5. Figure #5 depict scatter plot of *carat* vs. *price* for different colors of 
+*cut* and faceted by *clarity*. From this plot it is observed that features 
+*carat* and *clariy* should be considered to predict diamond prices. 
+
+
+### Interesting or surprising interactions between features
+
+For me Figure# 3 is interesting. The plot almost states that in order to improve 
+the quality of color we have to increase the carat (weight) of diamond. So its 
+not possible to have small diamonds with high quality of color? 
+Figure# 4 and Figure# 5 were interesting until i recalled that density of a 
+material remains almost constant!
+
+------
+
+# Final Plots and Summary
+
+
+
+### Plot One
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = diamonds, aes(x = price)) +
+  geom_histogram(color = "red", fill = "light blue") +
+  scale_x_log10(breaks = c(seq(300,3000,300), seq(3000, 5000, 500) ,seq(5000, 9000, 1000),seq(9000, 20000, 2000))) + 
+    labs(title = "Price histogram on logarithmic scale") +
+    scale_y_continuous(breaks = c(seq(0,3000,250))) + 
+    geom_vline(xintercept = 1500, color = "dark green", linetype = 5)+
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 90), 
+          plot.title = element_text(hjust = 0.5)) + 
+    labs(x="Price ($)")
+    
+```
+
+### Description One
+The bi modal distribution of *price* histogram indicate two pricing segments of 
+diamonds, from our dataset. The pricing segment breaks $1500.00, and that 37% are
+below $1500.00 and remaining 63% are prices above $1500.00. 
+
+```{r, echo=FALSE, warning=FALSE}
+print("the mean carat for diamonds with price < $1500")
+mean(diamonds[diamonds$price < 1500, ]$carat)
+print("the mean carat for diamonds with price > $1500")
+mean(diamonds[diamonds$price > 1500, ]$carat)
+```
+
+It can speculated that low carat diamond items like small ear rings and pendants 
+are targeted for below $1500 market, while engagement rings that require on an
+average 1 carat are the market segments of above $1500.
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+ggplot(data = diamonds, aes(x = color, y = carat)) +
+  geom_boxplot(color = "red", fill = "yellow") + 
+  labs(title = "Color & Carat relation") +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5)) + 
+    labs(x="Color", y = "Carat(Ct.)")
+```
+
+### Description Two
+An understanding from this plot is that high grade color in diamonds is 
+difficult with low carat diamonds. This is against to my intuition that low carat
+diamonds are usually colorless (high quality) and that impurity is easily 
+possible for large diamonds. A meaningful causality is difficult to establish 
+here. However it could be possible, at least in our dataset, that precautions are 
+taken on large diamonds to keep their color grade quality as high. 
+
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+ggplot(data = diamonds[diamonds$carat < 4, ], aes(x = carat, y = price)) +
+  geom_point(aes(color = cut)) +
+  facet_wrap(~ clarity)  +
+  geom_smooth(method = "lm") +
+  geom_vline(xintercept = c(1,2,3)) + 
+  labs(title = "Carat vs. Pirce. Facets by Clarity. Color by Cut")+
+  scale_color_brewer(type = "div")   +
+    theme(axis.ticks = element_blank(), 
+          panel.background = element_blank(), 
+          panel.grid = element_blank(),
+          axis.text.x = element_text(), 
+          plot.title = element_text(hjust = 0.5)) + 
+    labs(x="Carat(Ct.)", y = "Price ($)")
+```
+
+### Description Three
+An important indication of this plot is that slope of linear model is 
+increasing (meaning increase of *price* y-axis) with increase in quality of 
+*clarity*. Hence in addition to *carat*, I will consider *carat* to predict the
+*price* of a diamond. Considering other features may over fit the prediction 
+model. 
+
+
+------
+
+# Reflection
+
+The exploration begun with understanding the dataset followed by univariate 
+analysis, bivariate analysis and multivariate analysis. The area I struggled 
+initially is to understand the domain knowledge of diamonds (4Cs, depth, table). 
+The dataset helped me gain the domain knowledge. I will further this research to 
+create a linear regression model to predict the price of a diamond. 
